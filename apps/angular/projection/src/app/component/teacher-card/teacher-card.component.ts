@@ -1,40 +1,45 @@
-import { Component, OnInit } from '@angular/core';
-import { FakeHttpService } from '../../data-access/fake-http.service';
+import { Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { switchMap, tap } from 'rxjs';
+import {
+  FakeHttpService,
+  randTeacher,
+} from '../../data-access/fake-http.service';
 import { TeacherStore } from '../../data-access/teacher.store';
-import { CardType } from '../../model/card.model';
-import { Teacher } from '../../model/teacher.model';
 import { CardComponent } from '../../ui/card/card.component';
 
 @Component({
   selector: 'app-teacher-card',
   template: `
     <app-card
-      [list]="teachers"
-      [type]="cardType"
-      customClass="bg-light-red"></app-card>
+      [list]="teachers()"
+      [headerTpl]="header"
+      (add)="add()"
+      (delete)="delete($event)"
+      backgroundColor="rgba(250, 0, 0, 0.1)"></app-card>
+
+    <ng-template #header>
+      <img src="assets/img/teacher.png" width="200px" />
+    </ng-template>
   `,
-  styles: [
-    `
-      ::ng-deep .bg-light-red {
-        background-color: rgba(250, 0, 0, 0.1);
-      }
-    `,
-  ],
   standalone: true,
   imports: [CardComponent],
 })
-export class TeacherCardComponent implements OnInit {
-  teachers: Teacher[] = [];
-  cardType = CardType.TEACHER;
+export class TeacherCardComponent {
+  private http = inject(FakeHttpService);
+  private store = inject(TeacherStore);
 
-  constructor(
-    private http: FakeHttpService,
-    private store: TeacherStore,
-  ) {}
+  teachers$ = this.http.fetchTeachers$.pipe(
+    tap((teachers) => this.store.addAll(teachers)),
+    switchMap(() => this.store.teachers$),
+  );
+  teachers = toSignal(this.teachers$, { initialValue: [] });
 
-  ngOnInit(): void {
-    this.http.fetchTeachers$.subscribe((t) => this.store.addAll(t));
+  add() {
+    this.store.addOne(randTeacher());
+  }
 
-    this.store.teachers$.subscribe((t) => (this.teachers = t));
+  delete(id: number) {
+    this.store.deleteOne(id);
   }
 }
