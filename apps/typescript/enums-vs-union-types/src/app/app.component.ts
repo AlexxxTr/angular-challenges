@@ -1,14 +1,13 @@
 import { Component, computed, signal } from '@angular/core';
 
-enum Difficulty {
-  EASY = 'easy',
-  NORMAL = 'normal',
-}
+type Difficulty = 'easy' | 'normal';
 
-enum Direction {
-  LEFT = 'left',
-  RIGHT = 'right',
-}
+const Direction = {
+  LEFT: 'left',
+  RIGHT: 'right',
+} as const;
+
+type DirectionType = (typeof Direction)[keyof typeof Direction];
 
 @Component({
   standalone: true,
@@ -17,14 +16,14 @@ enum Direction {
   template: `
     <section>
       <div>
-        <button mat-stroked-button (click)="difficulty.set(Difficulty.EASY)">
+        <button mat-stroked-button (click)="difficulty.set('easy')">
           Easy
         </button>
-        <button mat-stroked-button (click)="difficulty.set(Difficulty.NORMAL)">
+        <button mat-stroked-button (click)="difficulty.set('normal')">
           Normal
         </button>
       </div>
-      <p>Selected Difficulty: {{ difficultyLabel() }}</p>
+      <p>Selected Difficulty: {{ difficulty() }}</p>
     </section>
 
     <section>
@@ -41,43 +40,27 @@ enum Direction {
   `,
   styles: `
     section {
-      @apply flex flex-col mx-auto my-5 w-fit gap-2 items-center;
+      @apply mx-auto my-5 flex w-fit flex-col items-center gap-2;
 
       > div {
         @apply flex w-fit gap-5;
       }
     }
 
-     button {
+    button {
       @apply rounded-md border px-4 py-2;
-     }
+    }
   `,
 })
 export class AppComponent {
-  readonly Difficulty = Difficulty;
-  readonly difficulty = signal<Difficulty>(Difficulty.EASY);
+  readonly difficulty = signal<Difficulty>('easy');
 
   readonly Direction = Direction;
-  readonly direction = signal<Direction | undefined>(undefined);
+  readonly direction = signal<DirectionType | undefined>(undefined);
 
-  readonly difficultyLabel = computed<string>(() => {
-    switch (this.difficulty()) {
-      case Difficulty.EASY:
-        return Difficulty.EASY;
-      case Difficulty.NORMAL:
-        return Difficulty.NORMAL;
-    }
-  });
-
-  readonly directionLabel = computed<string>(() => {
-    const prefix = 'You chose to go';
-    switch (this.direction()) {
-      case Direction.LEFT:
-        return `${prefix} ${Direction.LEFT}`;
-      case Direction.RIGHT:
-        return `${prefix} ${Direction.RIGHT}`;
-      default:
-        return 'Choose a direction!';
-    }
-  });
+  readonly directionLabel = computed<string>(() =>
+    this.direction()
+      ? `You chose to go ${this.direction()}`
+      : 'Choose a direction',
+  );
 }
